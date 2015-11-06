@@ -1,6 +1,6 @@
 #! /usr/bin/env ruby
 
-require './urls'
+require_relative './urls'
 
 module Github
   class Runner
