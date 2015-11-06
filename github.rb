@@ -232,6 +232,3 @@ module Github
     end
   end
 end
-
-
-Github::Runner.run(ARGV)
