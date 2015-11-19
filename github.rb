@@ -1,36 +1,28 @@
 #! /usr/bin/env ruby
 
 require_relative './urls'
+require_relative './websites'
 
 module Github
-  class Runner
-
-    attr_reader :command, :repo
-
-    def self.run(args)
-      self.new(args).run
-    end
+  class Handler < ::Websites::CommandHandler
+    attr_reader :repo
 
     def initialize(args)
       @repo = Urls.lookup(args.shift)
 
       if repo
-        @command = generate_command(args)
+        super args: args
       end
     end
 
-    def run
-      command.run
-    end
-
-    private
+    protected
 
     # supported commands
     # <null>  #=> open repo
     # <hash>  #=> open specific commit
     # c(ommit(s)) #=> open list of commits, or specific commit
     # p(ull(s))   #=> open list of pulls, or specific pull
-    # r(ef)       #=> open specific branch
+    # r(ef)       #=> open specific ref
     # pa(th)      #=> open specific path
     # f(ile)      #=> open specific file
     # d(iff) | pr #=> diff two things
@@ -70,15 +62,9 @@ module Github
     end
   end
 
-  class GithubCommand
-    attr_reader :url
-
+  class GithubCommand < ::Websites::WebCommand
     def initialize(repo, args=[])
-      @url = generate_url(repo, args)
-    end
-
-    def run
-      `open #{url}`
+      super( generate_url(repo, args) )
     end
   end
 
