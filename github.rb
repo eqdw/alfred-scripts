@@ -7,7 +7,7 @@ module Github
   class Handler < ::Websites::CommandHandler
     attr_reader :repo
 
-    def initialize(args)
+    def initialize(args: args)
       @repo = Urls.lookup(args.shift)
 
       if repo
@@ -64,7 +64,7 @@ module Github
 
   class GithubCommand < ::Websites::WebCommand
     def initialize(repo, args=[])
-      super( generate_url(repo, args) )
+      super( url: generate_url(repo, args) )
     end
   end
 
