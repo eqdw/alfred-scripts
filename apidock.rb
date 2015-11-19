@@ -24,7 +24,7 @@ module ApiDock
       if cmdclass
         cmdclass.new(args:args)
       else
-        Homepage.new
+        ::Websites::WebCommand.new(url: APIDOCK_URL)
       end
     end
 
