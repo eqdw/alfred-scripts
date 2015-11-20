@@ -3,14 +3,16 @@
 require_relative './urls'
 require_relative './websites'
 
+require 'forwardable'
+
 module Github
   class Handler < ::Websites::CommandHandler
-    attr_reader :repo
+    attr_reader :repo_abbr
 
     def initialize(args: args)
-      @repo = Urls.lookup(args.shift)
+      @repo_abbr = args.shift
 
-      if repo
+      if repo_abbr
         super args: args
       end
     end
@@ -29,7 +31,7 @@ module Github
     # h(istory)   #=> open history
     # b(lame)     #=> open blame for file
     def generate_command(args)
-      return OpenRepo.new(repo) if args.empty?
+      return OpenRepo.new(repo_abbr) if args.empty?
 
       cmdstr = args.shift
 
@@ -55,15 +57,23 @@ module Github
                   end
 
       if cmdclass
-        cmdclass.new(repo, args)
+        cmdclass.new(repo_abbr, args)
       else # hard coded case for looking up commits
-        Commit.new(repo, [cmdstr])
+        Commit.new(repo_abbr, [cmdstr])
       end
     end
   end
 
   class GithubCommand < ::Websites::WebCommand
-    def initialize(repo, args=[])
+    extend ::Forwardable
+
+    def_delegators :urls, :repo, :expand_ref
+
+    attr_reader :urls
+
+    def initialize(repo_abbr, args=[])
+      @urls = Urls.new(repo_abbr)
+
       super( url: generate_url(repo, args) )
     end
   end
@@ -110,7 +120,7 @@ module Github
   # `gh df ref <ref>`   #=> http://github.com/eqdw/dotfiles/tree/<ref>
   class Ref < GithubCommand
     def generate_url(repo, args)
-      "#{repo}/tree/#{args.first}"
+      "#{repo}/tree/#{urls.expand_ref(args)}"
     end
   end
 
@@ -131,7 +141,7 @@ module Github
           ref  = "master"
           path = args.last
         when 2
-          ref  = args.first
+          ref  = urls.expand_ref(args)
           path = args.last
         end
 
@@ -162,7 +172,7 @@ module Github
           ref  = "master"
           path = args.last
         when 2
-          ref  = args.first
+          ref  = urls.expand_ref(args)
           path = args.last
         end
 
@@ -173,11 +183,15 @@ module Github
 
   # `gh df diff <start> <end>` #=> http://github.com/eqdw/dotfiles/compare/<start>...<end>
   # `gh df pr <ref>`           #=> http://github.com/eqdw/dotfiles/compare/<ref> #useful for PRs
+  #
+  # cannot support spaces in the ref shortcut argument
+  # `gh df pf at123` is supported
+  # `gh df pf at 123` is not
   class Diff < GithubCommand
     def generate_url(repo, args)
       case args.length
       when 1
-        "#{repo}/compare/#{args.first}"
+        "#{repo}/compare/#{urls.expand_ref(args.first)}"
       when 2
         "#{repo}/compare/#{args.first}...#{args.last}"
       end
@@ -193,7 +207,7 @@ module Github
         ref  = "master"
         path = args.last
       when 2
-        ref  = args.first
+        ref  = urls.expand_ref(args)
         path = args.last
       end
 
@@ -210,7 +224,7 @@ module Github
         ref  = "master"
         path = args.last
       when 2
-        ref  = args.first
+        ref  = urls.expand_ref(args)
         path = args.last
       end
 
